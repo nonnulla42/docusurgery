@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://docusurgery.com/</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/patch</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/patch/app</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/timeline</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/timeline/app</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/ocr</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/ocr/app</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/toolkit</loc>
+  </url>
+  <url>
+    <loc>https://docusurgery.com/toolkit/app</loc>
+  </url>
+</urlset>

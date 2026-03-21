@@ -150,7 +150,6 @@ export const findBestMatch = (
 
 export const calculateHighlightRect = (
   matchLines: OcrLine[],
-  ocrWidth: number,
   containerWidth: number,
   scale: number
 ): HighlightRect => {

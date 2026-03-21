@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { 
   Upload, 
   FileText, 
@@ -20,12 +22,14 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import '../styles/timeline-dark.css';
 import { extractTimelineLocally } from '../services/extraction';
 import type { TimelineEntry } from '../types/timeline';
 import { groupEntriesByDate } from '../utils/dateParser';
 import { PdfCanvas } from '../components/PdfCanvas';
 import type { DocLanguage } from '../utils/dateContextClassifier';
 import { pdfjsLib } from '../utils/pdfWorker';
+import { usePageSeo } from "../../shared/usePageSeo";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,6 +46,7 @@ export function TimelineExtractor() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const selectedEntry = entries.find(e => e.id === selectedEntryId);
+  const [tooltipStyle, setTooltipStyle] = useState<{ top: number; left: number } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   
   // Timeline Filters (Range-based)
@@ -68,6 +73,39 @@ export function TimelineExtractor() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewScrollContainerRef = useRef<HTMLDivElement>(null);
+  const tooltipAnchorRef = useRef<HTMLElement | null>(null);
+
+  usePageSeo({
+    title: file ? `Timeline Extractor Workspace - ${file.name} | Docusurgery` : "Timeline Extractor Workspace | Docusurgery",
+    description: "Extract dates and timeline events from PDFs and scanned documents, review them against the source page, and keep processing local in the browser.",
+    path: "/timeline/app",
+  });
+
+  const updateTooltipPosition = (anchor: HTMLElement | null) => {
+    if (!anchor) {
+      setTooltipStyle(null);
+      return;
+    }
+
+    const rect = anchor.getBoundingClientRect();
+    const tooltipWidth = 320;
+    const tooltipHeight = 160;
+    const gap = 8;
+    const viewportPadding = 12;
+
+    let left = rect.left;
+    let top = rect.bottom + gap;
+
+    if (left + tooltipWidth > window.innerWidth - viewportPadding) {
+      left = Math.max(viewportPadding, rect.right - tooltipWidth);
+    }
+
+    if (top + tooltipHeight > window.innerHeight - viewportPadding) {
+      top = Math.max(viewportPadding, rect.top - tooltipHeight - gap);
+    }
+
+    setTooltipStyle({ top, left });
+  };
 
   // Cleanup blob URL
   useEffect(() => {
@@ -75,6 +113,24 @@ export function TimelineExtractor() {
       if (baseBlobUrl) URL.revokeObjectURL(baseBlobUrl);
     };
   }, [baseBlobUrl]);
+
+  useEffect(() => {
+    if (!selectedEntryId || !tooltipAnchorRef.current) {
+      setTooltipStyle(null);
+      return;
+    }
+
+    const handlePositionUpdate = () => updateTooltipPosition(tooltipAnchorRef.current);
+    handlePositionUpdate();
+
+    window.addEventListener('scroll', handlePositionUpdate, true);
+    window.addEventListener('resize', handlePositionUpdate);
+
+    return () => {
+      window.removeEventListener('scroll', handlePositionUpdate, true);
+      window.removeEventListener('resize', handlePositionUpdate);
+    };
+  }, [selectedEntryId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -187,12 +243,16 @@ export function TimelineExtractor() {
     return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
-  const handleEntryClick = (entry: TimelineEntry) => {
+  const handleEntryClick = (entry: TimelineEntry, anchor: HTMLElement | null) => {
     if (selectedEntryId === entry.id) {
       setSelectedEntryId(null);
+      tooltipAnchorRef.current = null;
+      setTooltipStyle(null);
     } else {
       setSelectedEntryId(entry.id);
       setCurrentPage(entry.pageNumber);
+      tooltipAnchorRef.current = anchor;
+      updateTooltipPosition(anchor);
     }
   };
 
@@ -311,23 +371,40 @@ export function TimelineExtractor() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-50">
+    <div className="timeline-suite suite-app-shell h-[calc(100vh-64px)] flex flex-col bg-gray-50">
+      <nav className="suite-top-nav">
+        <div className="suite-top-nav-inner">
+          <Link to="/" className="logo">
+            Docusurgery
+          </Link>
+          <div className="nav-links">
+            <Link to="/timeline">Overview</Link>
+            <Link to="/timeline/app">Tool</Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="suite-tool-page">
       {/* Header / Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+      <div className="suite-tool-header bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div className="p-2 bg-indigo-50 rounded-lg">
             <Clock className="text-indigo-600" size={20} />
           </div>
           <div>
+            <div className="suite-tool-kicker">Timeline Workspace</div>
             <h1 className="font-bold text-gray-900">Timeline Extractor</h1>
-            <div className="flex items-center gap-1 text-gray-400">
+            <div className="flex items-center gap-1 text-gray-400 suite-tool-copy">
               <ShieldCheck size={10} />
               <p className="text-[10px] font-medium uppercase tracking-wider">Private local processing</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 suite-tool-actions">
+          <Link to="/timeline" className="suite-chip-button">
+            Back to overview
+          </Link>
           {file && (
             <button 
               onClick={() => { 
@@ -360,11 +437,24 @@ export function TimelineExtractor() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <section className="mx-6 mb-4 rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <article>
+            <h2 className="text-base font-semibold text-gray-900">What this tool does</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">Timeline Extractor scans PDFs and images for dates and events, then links each finding back to the source page so you can verify chronology in context.</p>
+          </article>
+          <article>
+            <h2 className="text-base font-semibold text-gray-900">Best for</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">Use it for scanned case files, reports, correspondence, medical records, or investigation packets where dates are spread across many pages and local processing matters.</p>
+          </article>
+        </div>
+      </section>
+
+      <div className="suite-tool-workspace flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side: Preview (Secondary Context) */}
         <div 
           ref={previewScrollContainerRef}
-          className="w-full lg:w-[38%] bg-gray-200 overflow-auto flex flex-col items-center p-4 lg:p-8 relative border-r border-gray-300"
+          className="w-full lg:flex-[1.15] lg:w-auto bg-gray-200 overflow-auto flex flex-col items-center p-4 lg:p-8 relative border-r border-gray-300"
         >
           {!file ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md">
@@ -381,7 +471,7 @@ export function TimelineExtractor() {
               </button>
             </div>
           ) : (
-            <div className="w-full max-w-4xl bg-white shadow-2xl rounded-lg min-h-full flex flex-col">
+            <div className="w-full bg-white shadow-2xl rounded-lg min-h-full flex flex-col">
               <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wider rounded-t-lg shrink-0">
                 <div className="flex items-center gap-2 truncate max-w-[150px]">
                   <FileText size={12} />
@@ -585,7 +675,7 @@ export function TimelineExtractor() {
           </div>
 
           <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6">
-            <div className="max-w-4xl mx-auto space-y-3">
+            <div className="w-full space-y-3">
             <AnimatePresence mode="popLayout">
               {isProcessing ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -710,7 +800,10 @@ export function TimelineExtractor() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: (groupIdx * 0.05) + (idx * 0.02) }}
-                          onClick={() => handleEntryClick(entry)}
+                          onClick={(event) => {
+                            const anchor = event.currentTarget.querySelector('[data-timeline-anchor="date"]') as HTMLElement | null;
+                            handleEntryClick(entry, anchor);
+                          }}
                           className={cn(
                             "bg-white p-4 rounded-xl border transition-all group cursor-pointer relative overflow-hidden",
                             selectedEntryId === entry.id 
@@ -732,7 +825,7 @@ export function TimelineExtractor() {
                                 <span className={cn(
                                   "text-base font-black tracking-tight",
                                   selectedEntryId === entry.id ? "text-indigo-600" : "text-gray-900"
-                                )}>
+                                )} data-timeline-anchor="date">
                                   {entry.originalDate}
                                 </span>
                                 {entry.category === 'birth' && (
@@ -775,6 +868,7 @@ export function TimelineExtractor() {
         </div>
       </div>
       </div>
+      </div>
 
       {error && (
         <div className="fixed bottom-6 right-6 bg-red-50 border border-red-200 p-4 rounded-xl shadow-lg flex items-center gap-3 max-w-md animate-in slide-in-from-bottom-4">
@@ -785,6 +879,24 @@ export function TimelineExtractor() {
           </button>
         </div>
       )}
+
+      {selectedEntry && tooltipStyle
+        ? createPortal(
+            <div
+              className="timeline-entry-tooltip"
+              style={{ position: 'fixed', top: tooltipStyle.top, left: tooltipStyle.left }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="timeline-entry-tooltip__header">
+                <span className="timeline-entry-tooltip__label">Selected Event</span>
+                <span className="timeline-entry-tooltip__page">Page {selectedEntry.pageNumber}</span>
+              </div>
+              <p className="timeline-entry-tooltip__date">{selectedEntry.originalDate}</p>
+              <p className="timeline-entry-tooltip__snippet">{selectedEntry.snippet}</p>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

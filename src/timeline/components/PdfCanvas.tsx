@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { pdfjsLib } from '../utils/pdfWorker';
 import { Loader2, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -162,7 +162,7 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-red-500 bg-red-50 rounded-xl border border-red-100">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 p-12 text-red-300">
         <AlertCircle size={48} className="mb-4" />
         <p className="font-semibold text-center">{error}</p>
       </div>
@@ -178,24 +178,24 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="w-full mb-4 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-3 shadow-sm"
+            className="mb-4 flex w-full items-start gap-3 rounded-lg border border-white/10 bg-white/6 px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.18)]"
           >
-            <div className="p-1.5 bg-indigo-100 rounded-md text-indigo-600 shrink-0 mt-0.5">
+            <div className="mt-0.5 shrink-0 rounded-md bg-[#6b7cff]/15 p-1.5 text-[#9aa6ff]">
               <AlertCircle size={16} />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Selected Event</span>
-                <span className="text-[10px] font-bold text-indigo-400 uppercase">Page {selectedEntry.pageNumber}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#9aa6ff]">Selected Event</span>
+                <span className="text-[10px] font-bold uppercase text-white/45">Page {selectedEntry.pageNumber}</span>
               </div>
-              <p className="text-xs text-indigo-900 font-medium leading-relaxed">
+              <p className="text-xs font-medium leading-relaxed text-white/82">
                 {selectedEntry.snippet}
               </p>
             </div>
             {onDeselect && (
               <button 
                 onClick={onDeselect}
-                className="p-1 hover:bg-indigo-200 rounded-full text-indigo-400 hover:text-indigo-600 transition-colors"
+                className="rounded-full p-1 text-white/45 transition-colors hover:bg-white/8 hover:text-white/88"
                 title="Clear Selection"
               >
                 <X size={14} />
@@ -205,30 +205,30 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-gray-200 w-full px-4 py-3 flex items-center justify-between mb-6 rounded-t-lg">
+      <div className="sticky top-0 z-20 mb-6 flex w-full items-center justify-between rounded-t-lg border-b border-white/8 bg-[#0c1120]/88 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <button
             disabled={pageNumber <= 1}
             onClick={() => onPageChange(pageNumber - 1)}
-            className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-30 transition-colors"
+            className="rounded-full border border-white/8 bg-white/5 p-2 text-white/72 transition-colors hover:bg-white/8 disabled:opacity-30"
             title="Previous Page"
           >
             <ChevronLeft size={20} />
           </button>
-          <span className="text-sm font-bold text-gray-700 min-w-[100px] text-center">
+          <span className="min-w-[100px] text-center text-sm font-bold text-white/82">
             Page {pageNumber} of {numPages || '?'}
           </span>
           <button
             disabled={pageNumber >= numPages}
             onClick={() => onPageChange(pageNumber + 1)}
-            className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-30 transition-colors"
+            className="rounded-full border border-white/8 bg-white/5 p-2 text-white/72 transition-colors hover:bg-white/8 disabled:opacity-30"
             title="Next Page"
           >
             <ChevronRight size={20} />
           </button>
         </div>
         
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-white/45">
           Canvas Renderer
         </div>
       </div>
@@ -240,15 +240,15 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         className={cn(
-          "relative bg-white shadow-xl rounded-lg border border-gray-200 mb-8 select-none transition-shadow",
+          "relative mb-8 select-none rounded-lg border border-white/8 bg-white/4 shadow-xl transition-shadow",
           isPannable ? (isDragging ? "cursor-grabbing shadow-2xl" : "cursor-grab hover:shadow-2xl") : "cursor-default"
         )}
       >
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#060a12]/78">
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="animate-spin text-indigo-600" size={40} />
-              <span className="text-sm font-medium text-gray-500">Loading PDF...</span>
+              <Loader2 className="animate-spin text-[#8fa0ff]" size={40} />
+              <span className="text-sm font-medium text-white/55">Loading PDF...</span>
             </div>
           </div>
         )}
